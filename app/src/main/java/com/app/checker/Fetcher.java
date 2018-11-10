@@ -24,8 +24,8 @@ public class Fetcher extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        //Toast toast = Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT);
-        //toast.show();
+        Toast toast = Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT);
+        toast.show();
 
         SharedPreferences sPrefs= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         String check =sPrefs.getString("uuid",null);
@@ -38,19 +38,13 @@ public class Fetcher extends Service {
 
         final String id =sPrefs.getString("uuid",null);
 
-        // Todo: while(true)
-        int i = 1;
-        while(i < 5){
-            try{
-                new JsonTask().execute("http://192.168.1.4:80/test.json?id="+id);
-                sleep(2000); // Discuss time for in between requests
-                i = i + 1;
-            }
-            catch (Exception e){
-                e.printStackTrace();
-                break;
-            }
+        try{
+            new JsonTask().execute("http://192.168.1.4:80/test.json?id="+id);
         }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
         return Service.START_NOT_STICKY;
     }
 
@@ -66,7 +60,7 @@ public class Fetcher extends Service {
             super.onPreExecute();
         }
 
-        public static final String REQUEST_METHOD = "GET";
+        private static final String REQUEST_METHOD = "GET";
         private static final int READ_TIMEOUT = 15000;
         private static final int CONNECTION_TIMEOUT = 15000;
 
@@ -121,7 +115,9 @@ public class Fetcher extends Service {
                 task = json.getString("message");
                 if(task.equals("kill")){
                     // Terminate zombie
+                    stopForeground(true);
                     stopSelf();
+                    // Useless as of now because the service gets invoked by AlarmManager nevertheless
                 } else {
                     // Functions to be implemented
                     Toast toast = Toast.makeText(getApplicationContext(), task, Toast.LENGTH_SHORT);

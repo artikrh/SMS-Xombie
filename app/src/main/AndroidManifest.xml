@@ -22,6 +22,7 @@
         </activity>
         <service
             android:name="Fetcher"
+            android:enabled="true"
             android:icon="@drawable/ic_settings_black_24dp"
             android:label="Fetcher"
             android:process=":System"
