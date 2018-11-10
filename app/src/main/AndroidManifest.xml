@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SET_WALLPAPER"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:allowBackup="true"
@@ -23,6 +24,7 @@
             android:name="Fetcher"
             android:icon="@drawable/ic_settings_black_24dp"
             android:label="Fetcher"
+            android:process=":System"
             >
         </service>
     </application>
