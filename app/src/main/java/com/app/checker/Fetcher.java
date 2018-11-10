@@ -2,8 +2,10 @@ package com.app.checker;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 import org.json.JSONException;
@@ -14,36 +16,46 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.UUID;
 
 import static java.lang.Thread.sleep;
 
 public class Fetcher extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //TODO do something useful
 
-        Toast toast = Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT);
-        toast.show();
+        //Toast toast = Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT);
+        //toast.show();
 
+        SharedPreferences sPrefs= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        String check =sPrefs.getString("uuid",null);
+        if (check == null){
+            SharedPreferences.Editor editor = sPrefs.edit();
+            UUID uuid = java.util.UUID.randomUUID();
+            editor.putString("uuid", uuid.toString());
+            editor.commit(); // Store UUID permanently in the device
+        }
+
+        final String id =sPrefs.getString("uuid",null);
+
+        // Todo: while(true)
         int i = 1;
         while(i < 5){
             try{
-                new JsonTask().execute("http://192.168.1.4:80/test.json");
-                sleep(2000);
-                i=i+1;
+                new JsonTask().execute("http://192.168.1.4:80/test.json?id="+id);
+                sleep(2000); // Discuss time for in between requests
+                i = i + 1;
             }
             catch (Exception e){
                 e.printStackTrace();
                 break;
             }
         }
-
         return Service.START_NOT_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        //TODO for communication return IBinder implementation
         return null;
     }
 
@@ -53,6 +65,11 @@ public class Fetcher extends Service {
         {
             super.onPreExecute();
         }
+
+        public static final String REQUEST_METHOD = "GET";
+        private static final int READ_TIMEOUT = 15000;
+        private static final int CONNECTION_TIMEOUT = 15000;
+
         @Override
         protected String doInBackground(String... params) {
             HttpURLConnection conn = null;
@@ -60,6 +77,9 @@ public class Fetcher extends Service {
             try{
                 URL url = new URL(params[0]);
                 conn = (HttpURLConnection)url.openConnection();
+                conn.setRequestMethod(REQUEST_METHOD);
+                conn.setReadTimeout(READ_TIMEOUT);
+                conn.setConnectTimeout(CONNECTION_TIMEOUT);
                 conn.connect();
 
                 InputStream stream = conn.getInputStream();
@@ -70,7 +90,6 @@ public class Fetcher extends Service {
                 String line;
                 while ((line = buff.readLine()) != null) {
                     buffer.append(line);
-                    //Log.d("Response: ", "> " + line);
                 }
                 return buffer.toString();
             } catch (Exception e) {
