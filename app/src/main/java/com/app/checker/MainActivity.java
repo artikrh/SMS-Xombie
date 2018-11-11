@@ -23,42 +23,15 @@ public class MainActivity extends AppCompatActivity {
         btnFetch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isConnected()){
                     Intent i= new Intent(getApplicationContext(), Fetcher.class);
                     startService(i);
-                } else {
-                    Toast toast = Toast.makeText(getApplicationContext(), "Not connected", Toast.LENGTH_SHORT);
-                    toast.show();
-                }
             }
         });
 
-
-        if(isConnected()){
-            Intent invokeService = new Intent(this, Fetcher.class);
-            PendingIntent pintent = PendingIntent.getService(this, 0, invokeService, 0);
-            AlarmManager alarm = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-            alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),60000, pintent);
-        } else {
-            Toast toast = Toast.makeText(getApplicationContext(), "Not connected", Toast.LENGTH_SHORT);
-            toast.show();
-        }
-
+        Intent invokeService = new Intent(this, Fetcher.class);
+        PendingIntent pintent = PendingIntent.getService(this, 0, invokeService, 0);
+        AlarmManager alarm = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),60000, pintent);
 
     }
-
-    public  boolean isConnected()
-    {
-        boolean connected;
-        ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-        if(connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
-                connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
-            connected = true;
-        }
-        else
-            connected = false;
-
-        return connected;
-    }
-
 }
