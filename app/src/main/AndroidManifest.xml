@@ -14,20 +14,28 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <receiver android:name=".Autostart">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <service
             android:name="Fetcher"
             android:enabled="true"
-            android:icon="@drawable/ic_settings_black_24dp"
-            android:label="Fetcher"
+            android:label="FetcherService"
             android:process=":System"
             >
         </service>
+
     </application>
 
 </manifest>
