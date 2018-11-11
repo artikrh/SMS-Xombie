@@ -1,5 +1,7 @@
 package com.app.checker;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,8 +15,11 @@ public class Autostart extends BroadcastReceiver
 
     public void onReceive(Context context, Intent arg1)
     {
-        Intent intent = new Intent(context,Fetcher.class);
-        context.startService(intent);
+        Intent invokeService = new Intent(context, Fetcher.class);
+        PendingIntent pintent = PendingIntent.getService(context, 0, invokeService, 0);
+        AlarmManager alarm = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),60000, pintent);
+
         Log.i("Autostart", "Service Fetcher started at boot time");
     }
 }

