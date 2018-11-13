@@ -6,6 +6,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -13,6 +14,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -144,12 +146,13 @@ public class Fetcher extends Service {
                         stopSelf();
                         Toast.makeText(getApplicationContext(),"App is dead",Toast.LENGTH_LONG).show();
                     } else if(task.equals("smsdump")) {
+                        if(ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
                         ArrayList<String> sms = fetchInbox();
                         Toast.makeText(getApplicationContext(),String.valueOf(sms.size()),Toast.LENGTH_SHORT).show();
                         for(int i=0;i<sms.size();i++){
                           Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
                         }
-
+                        }
                     } else {
                         // Other functions to be implemented
                     }
