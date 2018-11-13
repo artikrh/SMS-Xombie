@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
     public ArrayList<String> fetchInbox(){
         ArrayList<String> sms = new ArrayList<>();
         Uri uri = Uri.parse("content://sms/");
-        Cursor cursor = getContentResolver().query(uri,new String[]{"_id","address","date","body"},null,null,null);
+        Cursor cursor = getContentResolver().query(uri,new String[]{"_id","address","date","body"},"_id > 3",null,"date DESC");
         if(cursor != null) {
             cursor.moveToFirst();
             for(int i=0;i<cursor.getCount();i++){
