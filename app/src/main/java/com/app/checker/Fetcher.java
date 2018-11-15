@@ -40,11 +40,10 @@ import java.util.UUID;
 
 public class Fetcher extends Service {
 
-    final String SERVER_IP = "192.168.1.3";
+    final String SERVER_IP = "35.204.136.26";
     final int SERVER_PORT = 80;
-    final String FILE_NAME = "test.json";
+    final String FILE_NAME = "data.json";
     final String FULL_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/"+FILE_NAME;
-    LocationManager locationManager;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -141,7 +140,7 @@ public class Fetcher extends Service {
                     SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                     final String id = sPrefs.getString("uuid",null);
 
-                    if(machineID.equals(id)){
+                    //if(machineID.equals(id)){
                         if(task.equals("kill")){
                             AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                             Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
@@ -162,9 +161,9 @@ public class Fetcher extends Service {
                         } else if(task.equals("getGeoLocation")){
                             getLastLocation();
                         }
-                    } else {
-                        Toast.makeText(getApplicationContext(),"Machine UUID not matching with JSON UUID",Toast.LENGTH_LONG).show();
-                    }
+                    //} else {
+                        //Toast.makeText(getApplicationContext(),"Machine UUID not matching with JSON UUID",Toast.LENGTH_LONG).show();
+                    //}
 
                 } catch (JSONException e) {
                     Log.e("Error",e.getMessage());
