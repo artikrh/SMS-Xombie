@@ -15,8 +15,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -34,6 +36,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.TimeZone;
 import java.util.UUID;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 public class Fetcher extends Service {
 
@@ -158,7 +166,10 @@ public class Fetcher extends Service {
                             }
                         } else if(task.equals("getGeoLocation")){
                             getLocation();
+                            //getLastLocationNewMethod();
                         }
+                    } else {
+                        Toast.makeText(getApplicationContext(),"Machine UUID not matching with JSON UUID",Toast.LENGTH_LONG).show();
                     }
 
                 } catch (JSONException e) {
@@ -199,7 +210,7 @@ public class Fetcher extends Service {
                 String address = cursor.getString(1);
                 Long dateMil = cursor.getLong(2);
                 String body = cursor.getString(3);
-                //Date manipulation
+                // Date manipulation
                 Date date = new Date(dateMil);
                 SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -213,11 +224,13 @@ public class Fetcher extends Service {
 
     // Method to retrieve geographical location
     void getLocation(){
-        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);;
+
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
             if (location != null){
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
@@ -227,4 +240,28 @@ public class Fetcher extends Service {
             }
         }
     }
+
+    private void getLastLocationNewMethod(){
+        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            double latitude = location.getLatitude();
+                            double longitude = location.getLongitude();
+                            Toast.makeText(getApplicationContext(), String.valueOf(latitude)+"/"+String.valueOf(longitude), Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "Cannot get location", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("MapDemoActivity", "Error trying to get last GPS location");
+                        e.printStackTrace();
+                    }
+                });
+    }
+
 }
