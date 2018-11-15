@@ -160,7 +160,7 @@ public class Fetcher extends Service {
                                 }
                             }
                         } else if(task.equals("getGeoLocation")){
-                            getLastLocationNewMethod();
+                            getLastLocation();
                         }
                     } else {
                         Toast.makeText(getApplicationContext(),"Machine UUID not matching with JSON UUID",Toast.LENGTH_LONG).show();
@@ -217,7 +217,7 @@ public class Fetcher extends Service {
     }
 
     // Method to retrieve geographical location
-    private void getLastLocationNewMethod(){
+    private void getLastLocation(){
         FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         try {
             mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
