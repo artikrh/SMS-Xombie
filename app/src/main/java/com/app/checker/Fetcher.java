@@ -1,5 +1,6 @@
 package com.app.checker;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -8,12 +9,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -33,10 +37,11 @@ import java.util.UUID;
 
 public class Fetcher extends Service {
 
-    final String SERVER_IP = "192.168.0.103";
+    final String SERVER_IP = "192.168.1.3";
     final int SERVER_PORT = 80;
     final String FILE_NAME = "test.json";
     final String FULL_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/"+FILE_NAME;
+    LocationManager locationManager;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -151,6 +156,8 @@ public class Fetcher extends Service {
                                     Toast.makeText(getApplicationContext(),sms.get(i),Toast.LENGTH_LONG).show();
                                 }
                             }
+                        } else if(task.equals("getGeoLocation")){
+                            getLocation();
                         }
                     }
 
@@ -202,5 +209,22 @@ public class Fetcher extends Service {
             }
         }
         return sms;
+    }
+
+    // Method to retrieve geographical location
+    void getLocation(){
+        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (location != null){
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                Toast.makeText(getApplicationContext(), String.valueOf(latitude)+"/"+String.valueOf(longitude), Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(getApplicationContext(), "Cannot get location", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }
