@@ -1,6 +1,5 @@
 package com.app.checker;
 
-import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -15,14 +14,16 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -36,12 +37,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.TimeZone;
 import java.util.UUID;
-
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 public class Fetcher extends Service {
 
@@ -165,8 +160,7 @@ public class Fetcher extends Service {
                                 }
                             }
                         } else if(task.equals("getGeoLocation")){
-                            getLocation();
-                            //getLastLocationNewMethod();
+                            getLastLocationNewMethod();
                         }
                     } else {
                         Toast.makeText(getApplicationContext(),"Machine UUID not matching with JSON UUID",Toast.LENGTH_LONG).show();
@@ -223,45 +217,31 @@ public class Fetcher extends Service {
     }
 
     // Method to retrieve geographical location
-    void getLocation(){
-        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);;
-
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
-            if (location != null){
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
-                Toast.makeText(getApplicationContext(), String.valueOf(latitude)+"/"+String.valueOf(longitude), Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(getApplicationContext(), "Cannot get location", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     private void getLastLocationNewMethod(){
         FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
-                    @Override
-                    public void onSuccess(Location location) {
-                        if (location != null) {
-                            double latitude = location.getLatitude();
-                            double longitude = location.getLongitude();
-                            Toast.makeText(getApplicationContext(), String.valueOf(latitude)+"/"+String.valueOf(longitude), Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(getApplicationContext(), "Cannot get location", Toast.LENGTH_LONG).show();
+        try {
+            mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+                @Override
+                public void onSuccess(Location location) {
+                    if (location != null) {
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+                        Toast.makeText(getApplicationContext(), String.valueOf(latitude) + "/" + String.valueOf(longitude), Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Cannot get location", Toast.LENGTH_LONG).show();
+                    }
+                }
+            })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.d("LocationFetch", "Error trying to get last GPS location");
+                            e.printStackTrace();
                         }
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d("MapDemoActivity", "Error trying to get last GPS location");
-                        e.printStackTrace();
-                    }
-                });
+                    });
+        } catch (SecurityException e){
+            Log.d("LocationFetch", "Permission missing");
+        }
     }
 
 }
