@@ -44,7 +44,7 @@ A typical use case would consist of the following process as shown in FIgure 2:
 
 ![Figure 1 - Xombie Platform Abstract Architecture](https://i.imgur.com/cb7PCLm.png)
 
-In here, the controller device sends a command through an SMS message to retrieve all of the mobile phones geographical location (`getGeoLocation` keyword). The GSM shield, which can operate in Quad 850/900/1800/1900 MHz frequency bands, uses a local SIM card to receive the message, forward the SMS content to the smsXlib API, which then queues the task to the hosting server. Considering the mobile devices sends HTTP requests periodically to check whether there is something to do, in this case, they would immediately send relevant latitude and longitude values as a POST request (given that the user has given the application location service permission).
+In here, the controller device sends a command through an SMS message to retrieve all of the mobile phones geographical location (`getGeoLocation` keyword). The GSM shield, which can operate in Quad 850/900/1800/1900 MHz frequency bands, uses a local SIM card to receive the message, forward the SMS content to the [smsXlib](https://github.com/ButrintKomoni/smsXlib) API, which then queues the task to the hosting server. Considering the mobile devices sends HTTP requests periodically to check whether there is something to do, in this case, they would immediately send relevant latitude and longitude values as a POST request (given that the user has given the application location service permission).
 
 ### 3. Capabilities
 
