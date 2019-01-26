@@ -1,4 +1,4 @@
-# SMS-Xombie
+# SMS-Xombie ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 An Android APK which fetches/sends JSON encoded data to a remote server for Command &amp; Control purposes
 
 ### Table of Contents
