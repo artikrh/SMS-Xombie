@@ -50,9 +50,9 @@ In here, the controller device sends a command through an SMS message to retriev
 
 As of now, the android app has these capabilities:
 * SMS dump (`smsdump`) - Will dump the entire message history;
+* Contacts dump (`contactsDump`) - Will dump the entire contact list;
 * Get the geographical location (`getGeoLocation`) - Will retrieve device's current latitude and longitude values;
 * Kill the service (`kill`) - Will terminate the running service until the next boot.
 
 To be implemented:
-* Call list dump (`calldump`) - Will dump the entire call logs;
 * Retrieve fingerprints (`getFingerprints`) - Will return fingerprint data.
