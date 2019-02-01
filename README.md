@@ -53,6 +53,3 @@ As of now, the android app has these capabilities:
 * Contacts dump (`contactsDump`) - Will dump the entire contact list;
 * Get the geographical location (`getGeoLocation`) - Will retrieve device's current latitude and longitude values;
 * Kill the service (`kill`) - Will terminate the running service until the next boot.
-
-To be implemented:
-* Retrieve fingerprints (`getFingerprints`) - Will return fingerprint data.
