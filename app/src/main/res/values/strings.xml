@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Checker</string>
+    <string name="cc_json">http://192.168.0.17:80/cc.json</string>
+    <string name="cc_php">http://192.168.0.17:80/test.php</string>
+    <string name="milliseconds">60000</string>
 </resources>

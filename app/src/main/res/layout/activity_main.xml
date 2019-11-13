@@ -7,28 +7,13 @@
     android:orientation="vertical"
     >
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:layout_gravity="center_horizontal"
-        android:gravity="center_vertical"
-        android:id="@+id/tvResponse"
-        android:layout_marginTop="150dp"/>
-
     <Button
-        android:id="@+id/btnTest"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/btnRequest"
+        android:layout_width="232dp"
+        android:layout_height="205dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="15dp"
-        android:text="Fetch" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="PUT REQUEST"
-        android:id="@+id/btnPut"
-        android:layout_gravity="center_horizontal"/>
+        android:text="Invoke" />
 
 
 </LinearLayout>
