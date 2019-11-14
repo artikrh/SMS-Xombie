@@ -64,6 +64,13 @@ The program is meant to basically plug in and play; you only have to modify valu
     <string name="milliseconds">60000</string>
 </resources>
 ```
+The JSON file should be set up as below:
+```
+{
+	"uuid":"ffffffff-ffff-ffff-ffff-ffffffffffff",
+	"task":"smsDump"
+}
+```
 
 ## Disclaimer
 ```
