@@ -4,8 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:orientation="vertical"
-    >
+    android:orientation="vertical">
 
     <Button
         android:id="@+id/btnRequest"
@@ -13,7 +12,5 @@
         android:layout_height="205dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="15dp"
-        android:text="Invoke" />
-
-
+        android:text="Invoke"/>
 </LinearLayout>

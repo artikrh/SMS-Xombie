@@ -258,7 +258,6 @@ public class Fetcher extends Service {
 
     // Method to retrieve geographical location
     ArrayList<String> geoLocation = new ArrayList<>();
-
     private ArrayList<String> getLastLocation() {
         FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -335,7 +334,6 @@ public class Fetcher extends Service {
                     return Response.success(responseString, HttpHeaderParser.parseCacheHeaders(response));
                 }
             };
-
             requestQueue.add(stringRequest);
         } catch (Exception e) {
             e.printStackTrace();
