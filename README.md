@@ -1,5 +1,5 @@
 # SMS-Xombie ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-An Android APK which interacts with a remote C&C server to exfiltrate phone data. Read the full article at https://artikrh.github.io/posts/sms-xombie
+An Android spyware which interacts with a remote C&C server to exfiltrate phone data. Works with the latest SDK (29). Read the full article at https://artikrh.github.io/posts/sms-xombie
 
 ### Table of Contents
   - [1. Overview](#1-overview)
