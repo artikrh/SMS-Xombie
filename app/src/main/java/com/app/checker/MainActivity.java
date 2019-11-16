@@ -1,10 +1,14 @@
 package com.app.checker;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -13,7 +17,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Temporary button to force test the service (makes one request per click)
+        askPermissions();
+
+        // Test env.
+        final TextView txtOutput = findViewById(R.id.txtOutput);
+        txtOutput.setMovementMethod(new ScrollingMovementMethod());
         Button btnRequest = findViewById(R.id.btnRequest);
         btnRequest.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -30,5 +38,24 @@ public class MainActivity extends AppCompatActivity {
         AlarmManager alarm = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
         alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pintent);
         */
+    }
+
+    public void askPermissions() {
+        String[] PERMISSIONS = {
+                android.Manifest.permission.READ_CONTACTS,
+                android.Manifest.permission.READ_CALL_LOG,
+                android.Manifest.permission.RECEIVE_BOOT_COMPLETED,
+                android.Manifest.permission.READ_SMS,
+                android.Manifest.permission.ACCESS_NETWORK_STATE,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                android.Manifest.permission.ACCESS_NETWORK_STATE,
+        };
+
+        for (String permission : PERMISSIONS) {
+            if (ActivityCompat.checkSelfPermission(MainActivity.this, permission) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS, 1);
+            }
+        }
     }
 }

