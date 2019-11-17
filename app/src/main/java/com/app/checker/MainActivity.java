@@ -1,14 +1,22 @@
 package com.app.checker;
 
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,8 +34,9 @@ public class MainActivity extends AppCompatActivity {
         btnRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(getApplicationContext(), Fetcher.class);
-                startService(i);
+                //Intent i = new Intent(getApplicationContext(), Fetcher.class);
+                //startService(i);
+                
             }
         });
 
@@ -39,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
         alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pintent);
         */
     }
+
+
 
     public void askPermissions() {
         String[] PERMISSIONS = {

