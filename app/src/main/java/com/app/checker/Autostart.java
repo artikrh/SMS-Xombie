@@ -5,7 +5,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 public class Autostart extends BroadcastReceiver
 {
@@ -21,6 +20,5 @@ public class Autostart extends BroadcastReceiver
         if(alarm != null){
             alarm.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), R.string.milliseconds, pintent);
         }
-        Log.i("Autostart", "Service Fetcher started");
     }
 }
