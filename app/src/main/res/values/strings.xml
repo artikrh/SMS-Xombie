@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Xombie</string>
-    <string name="cc_json">http://192.168.0.14:80/cc.json</string>
-    <string name="cc_php">http://192.168.0.14:80/test.php</string>
+    <string name="cc">http://192.168.0.14:80/cc.php</string>
     <string name="milliseconds">60000</string>
 </resources>

