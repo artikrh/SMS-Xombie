@@ -269,7 +269,6 @@ public class Fetcher extends Service {
         }
         return info;
     }
-
     // Method to dump call logs
     private ArrayList<String> fetchCallLogs() {
         ArrayList<String> logs = new ArrayList<>();
